@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Simple todo list</title>
+
+    <link rel="stylesheet" href="/frontend/css/bootstrap.min.css">
+    <link rel="stylesheet" href="/frontend/css/main.css">
+
+</head>
+<body>
+
+<div id="app">
+    <div class="container">
+        <div class="row mt-5">
+            <div class="col-lg-12">
+                <div class="title">
+                    <h1>
+                        Simple todo list.
+                    </h1>
+                    <small>This is not my course project. I just didn't want to bother :))))))</small>
+                </div>
+                <div>
+                    <button type="button" class="btn btn-success" data-toggle="modal" data-target="#add">Add</button>
+                </div>
+                <table class="table">
+                    <thead class="thead-dark">
+                    <tr>
+                        <th scope="col">id</th>
+                        <th scope="col">Task</th>
+                        <th scope="col">Done</th>
+                        <th scope="col">Action</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr v-for="t in todo">
+                        <th>{{t.id}}</th>
+                        <td>{{t.task}}</td>
+                        <td>{{t.done}}</td>
+                        <td>
+                            <button class="btn btn-primary" @click.prevent="getItemById(t.id)" data-toggle="modal"
+                                    data-target="#edit">Edit
+                            </button>
+                            <button class="btn btn-danger" @click.prevent="deleteItemById(t.id)">Delete</button>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal -->
+    <div class="modal fade" id="add" tabindex="-1" role="dialog"
+         aria-labelledby="exampleModalCenterTitle" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="exampleModalCenterTitle">Add new task</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <form @submit.prevent="add">
+                        <input type="text" placeholder="New task" v-model="newTask">
+                        <button type="submit" class="btn btn-primary">Submit</button>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <div class="modal fade" id="edit" tabindex="-1" role="dialog"
+         aria-labelledby="editTitle" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="editTitle">Edit</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <form @submit.prevent="edit">
+                        <div class="input-group mb-3 d-block">
+
+                            <div class="mb-3">
+                                <input class="form-control" type="text" v-model="itemById.id" disabled>
+                            </div>
+                            <div class="mb-3">
+                                <input class="form-control" type="text" placeholder="Edit task"
+                                       v-model="itemById.task">
+                            </div>
+                            <div class="mb-3">
+                                <input class="form-control" type="number" min="0" max="1"
+                                       placeholder="Is done(1 = it's done,0 = it's not done)"
+                                       v-model="itemById.done" oninput="validity.valid||(value='');">
+                            </div>
+                        </div>
+                        <hr>
+                        <button type="submit" class="btn btn-primary">Submit</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+<script src="https://code.jquery.com/jquery-3.4.1.slim.min.js"
+        integrity="sha384-J6qa4849blE2+poT4WnyKhv5vZF5SrPo0iEjwBvKU7imGFAV0wwj1yYfoRSJoZ+n"
+        crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js"
+        integrity="sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo"
+        crossorigin="anonymous"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.min.js"
+        integrity="sha384-wfSDF2E50Y2D1uUdj0O3uMBJnjuUD4Ih7YwaYd1iqfktj0Uod8GCExl3Og8ifwB6"
+        crossorigin="anonymous"></script>
+<script src="/frontend/js/vue.js"></script>
+<script>
+    var app = new Vue({
+
+        el: '#app',
+        data: {
+            todo: {},
+            newTask: '',
+            itemById: {}
+        },
+        methods: {
+            getTodoList() {
+                axios.get('http://localhost:8080/get-todo').then((response) => {
+                    this.todo = response.data
+
+                })
+            },
+            getItemById(id) {
+                axios.get('http://localhost:8080/get-item?id=' + id).then((response) => {
+                    this.itemById = response.data
+                })
+            },
+            add() {
+                axios.post('http://localhost:8080/add', {"new_task": this.newTask}).then((response) => {
+                    this.getTodoList()
+                    $('#add').modal('hide')
+                    alert('Successfully added!!!')
+                })
+            },
+            edit() {
+                if (this.itemById.done == null) {
+                    this.itemById.done = 0
+                }
+                axios.put('http://localhost:8080', this.itemById).then((response) => {
+                    this.getTodoList()
+                    $('#edit').modal('hide')
+                    alert('Successfully updated!!!')
+                })
+            },
+            deleteItemById(id) {
+                if (confirm("The task will be deleted forever!!!")) {
+                    axios.post('http://localhost:8080/delete', {'id': id}).then((response) => {
+                        this.getTodoList()
+                        alert('Successfully deleted!!!')
+                    })
+                }
+            }
+        },
+        mounted() {
+            this.getTodoList()
+        }
+    })
+</script>
+</body>
+</html>
